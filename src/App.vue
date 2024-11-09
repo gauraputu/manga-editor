@@ -2,9 +2,10 @@
 import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
-import { readDir } from '@tauri-apps/plugin-fs';
+import { readDir, readFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import Table from './component/Table.vue';
 import FileDetail from './component/FileDetail.vue';
+import JSZip from "jszip";
 
 const greetMsg = ref("");
 const name = ref("");
@@ -40,6 +41,27 @@ async function getFilesInDirectory(path) {
     return [];
   }
 }
+
+async function readZipFromPath(filePath) {
+  const zip = new JSZip();
+  const fileData = await readFile(filePath, {
+    baseDir: BaseDirectory.Home,
+  }); // Read file from path in binary
+  const zipContent = await zip.loadAsync(fileData);
+
+  zipContent.forEach(async (relativePath, zipEntry) => {
+    console.log("File:", relativePath);
+    if (!zipEntry.dir) {
+      const fileContent = await zipEntry.async("text");
+      console.log("Content:", fileContent);
+    }
+  });
+}
+
+function handleTableSelectFile(file) {
+  selectedFile.value = file;
+  const zipFile = readZipFromPath(file.path+'/'+file.name)
+}
 </script>
 
 <template>
@@ -47,7 +69,7 @@ async function getFilesInDirectory(path) {
     <button id="choose-folder-button" @click="handleChooseFolderButton"
       class="btn btn-md btn-primary">ChooseFolder</button>
     <div class="grid grid-cols-2 gap-4">
-      <Table v-model="files" @select-file="selectedFile = $event" />
+      <Table v-model="files" @select-file="handleTableSelectFile" />
       <FileDetail v-model="selectedFile" />
     </div>
   </main>
