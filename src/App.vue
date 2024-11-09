@@ -1,31 +1,50 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, reactive } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
+import { readDir } from '@tauri-apps/plugin-fs';
+import Table from './component/Table.vue';
 
 const greetMsg = ref("");
 const name = ref("");
+const files = reactive([])
 
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
   greetMsg.value = await invoke("greet", { name: name.value });
 }
 
-// Open a dialog
-
-const handleChooseFolderButton = async () => {
-  const file = await open({
+const handleChooseFolderButton = async (): Promise<string | string[]> => {
+  const directoryPath = await open({
     multiple: false,
     directory: true,
   });
-  console.log(file);
-  return file
+
+  const filesInDirectory = await getFilesInDirectory(directoryPath)
+  files.push(...filesInDirectory.filter(file => !files.includes(file)));
+  console.log(filesInDirectory)
+  console.log(files)
+}
+
+async function getFilesInDirectory(path) {
+  try {
+    const filesInPath = await readDir(path, { recursive: false });
+    for (let obj of filesInPath) {
+      obj['path'] = path
+    }
+    return filesInPath.filter(obj => obj.isFile)
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    return [];
+  }
 }
 </script>
 
 <template>
   <main class="container">
-    <button id="choose-folder-button" @click="handleChooseFolderButton" class="btn btn-md btn-primary">ChooseFolder</button>
+    <button id="choose-folder-button" @click="handleChooseFolderButton"
+      class="btn btn-md btn-primary">ChooseFolder</button>
+    <Table v-model="files" />
   </main>
 </template>
 
@@ -37,7 +56,6 @@ const handleChooseFolderButton = async () => {
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #249b73);
 }
-
 </style>
 <style>
 :root {
@@ -116,6 +134,7 @@ button {
 button:hover {
   border-color: #396cd8;
 }
+
 button:active {
   border-color: #396cd8;
   background-color: #e8e8e8;
@@ -145,9 +164,9 @@ button {
     color: #ffffff;
     background-color: #0f0f0f98;
   }
+
   button:active {
     background-color: #0f0f0f69;
   }
 }
-
 </style>
