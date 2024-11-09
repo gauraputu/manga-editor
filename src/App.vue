@@ -4,10 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir } from '@tauri-apps/plugin-fs';
 import Table from './component/Table.vue';
+import FileDetail from './component/FileDetail.vue';
 
 const greetMsg = ref("");
 const name = ref("");
 const files = reactive([])
+const selectedFile = ref(null);
 
 async function greet() {
   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -44,6 +46,9 @@ async function getFilesInDirectory(path) {
   <main class="container">
     <button id="choose-folder-button" @click="handleChooseFolderButton"
       class="btn btn-md btn-primary">ChooseFolder</button>
-    <Table v-model="files" />
+    <div class="grid grid-cols-2 gap-4">
+      <Table v-model="files" @select-file="selectedFile = $event" />
+      <FileDetail v-model="selectedFile" />
+    </div>
   </main>
 </template>

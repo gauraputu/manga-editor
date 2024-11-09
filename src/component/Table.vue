@@ -20,7 +20,7 @@ const props = defineProps({
             </thead>
             <tbody>
                 <!-- row 1 -->
-                <tr class="hover" v-for="(file, index) in modelValue" :key="index">
+                <tr class="hover" v-for="(file, index) in modelValue" :key="index" @click="$emit('select-file', file)">
                     <th>{{ index +1 }}</th>
                     <td>{{ file.name }}</td>
                     <td>{{ file.path }}</td>
